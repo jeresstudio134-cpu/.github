@@ -1,0 +1,40 @@
+name: Build iOS App (.ipa)
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-size: 20
+
+    - name: Install Dependencies
+      run: npm install
+
+    - name: Sync Capacitor
+      run: npx cap sync ios
+
+    - name: Build Xcode Project
+      run: |
+        cd ios/App
+        xcodebuild -workspace App.xcworkspace -scheme App -sdk iphoneos -configuration Release CODE_SIGNING_ALLOWED=NO DONT_GENERATE_INFOPLIST_FILE=YES clean build
+
+    - name: Create IPA Package
+      run: |
+        mkdir -p build/Payload
+        cp -r ios/App/build/Release-iphoneos/App.app build/Payload/
+        cd build
+        zip -r App.ipa Payload
+
+    - name: Upload IPA Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-app-ipa
+        path: build/App.ipa
