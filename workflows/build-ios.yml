@@ -13,23 +13,37 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-size: 20
+        node-version: 20
 
     - name: Install Dependencies
       run: npm install
 
+    - name: Build Web Assets
+      run: npm run build --if-present
+
     - name: Sync Capacitor
       run: npx cap sync ios
+
+    - name: Install Pods (jika ada Podfile)
+      run: |
+        cd ios/App
+        if [ -f Podfile ]; then pod install; fi
 
     - name: Build Xcode Project
       run: |
         cd ios/App
-        xcodebuild -workspace App.xcworkspace -scheme App -sdk iphoneos -configuration Release CODE_SIGNING_ALLOWED=NO DONT_GENERATE_INFOPLIST_FILE=YES clean build
+        xcodebuild -workspace App.xcworkspace \
+          -scheme App \
+          -sdk iphoneos \
+          -configuration Release \
+          -derivedDataPath build \
+          CODE_SIGNING_ALLOWED=NO \
+          clean build
 
     - name: Create IPA Package
       run: |
         mkdir -p build/Payload
-        cp -r ios/App/build/Release-iphoneos/App.app build/Payload/
+        cp -r ios/App/build/Build/Products/Release-iphoneos/App.app build/Payload/
         cd build
         zip -r App.ipa Payload
 
